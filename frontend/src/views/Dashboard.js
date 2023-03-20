@@ -14,6 +14,7 @@ import {
   Form,
   OverlayTrigger,
   Tooltip,
+  Dropdown,
 } from "react-bootstrap";
 
 
@@ -23,10 +24,18 @@ function Dashboard() {
 
   const [inputData, setInput] = useState([])
   const [maxScale, setMaxScale] = useState([])
+  const [templates, setTemplates] = useState([])
+  const [selectedTemplate, setSelectedTemplate] = useState([])
+  const [instanceId, setInstance] = useState([])
 
-  async function update ()
+
+  function update (internalId)
   {
-        fetch("http://localhost:5222/api/test/testRunResult/bing.jmx-cd39f86c-5879-4b0b-8c6f-b5204f2ae7de.csv")
+    console.log(internalId);
+    // if(instanceId == undefined || instanceId == "") return;
+    var url = "http://localhost:5222/loadtest/testRunResult/" + internalId;
+
+        fetch(url)
           .then(res => res.json())
           .then(
             (result) => {
@@ -44,17 +53,74 @@ function Dashboard() {
             }
           )
   }
+
+  async function getTemplate ()
+  {
+        fetch("http://localhost:5222/loadtest/getAllRunTemplates")
+          .then(res => res.json())
+          .then(
+            (result) => {
+              setTemplates(result);
+            },
+            // Note: it's important to handle errors here
+            // instead of a catch() block so that we don't swallow
+            // exceptions from actual bugs in components.
+            (error) => {
+              this.setState({
+                isLoaded: true,
+                error
+              });
+            }
+          )
+  }
   
-  useEffect(() => {
-    update ()
+  // useEffect(() => {
+  //   setInterval(()=>
+  //   {update (instanceId)},5000)
+  //  }, []);
+
+   useEffect(() => {
+    getTemplate ()
    }, []);
 
-  //  setInterval(update, 600000);
 
-  setTimeout(() => {
-    update();
-   }, 10000);
+  // // setInterval(update, 5000);
 
+  // setTimeout(() => {
+  //   update();
+  //  }, 5000);
+
+  //  setTimeout(update,5000);
+
+  var selectTemplate = function (a) {
+       setSelectedTemplate(a);
+    }
+
+
+    var RunTestInstance = function (selectedTemplate) {
+      var runInstanceId = "";
+      var url = "http://localhost:5222/loadtest/startTestRun/" + selectedTemplate;
+      fetch(url)
+      .then(res => res.json())
+      .then(
+        (result) => {
+          setInstance(result.id);
+          runInstanceId = result.id;
+        },
+        // Note: it's important to handle errors here
+        // instead of a catch() block so that we don't swallow
+        // exceptions from actual bugs in components.
+        (error) => {
+          this.setState({
+            isLoaded: true,
+            error
+          });
+        }
+      );
+
+      setInterval(()=>
+      {update (runInstanceId)},5000);
+   }
 
   // useEffect(() => {
   //     {
@@ -108,7 +174,12 @@ function Dashboard() {
   let inputCountObject = Object.assign(inputCount);
   let inputDateObject = Object.assign(inputDate);
 
-  
+  let dropDownContext = templates.map((item) => { return [ <Dropdown.Item
+    id = {item}
+    onClick={()=> selectTemplate(item)}
+  >
+    {item}
+  </Dropdown.Item>]});
 
 
   // let test2 = {series: inputData.map(count)};
@@ -121,13 +192,28 @@ function Dashboard() {
   return (
     <>
       <Container fluid>
+    
         <Row>
           {/* <p>{JSON.stringify(inputDate, null, 2)}</p> */}
           {/* <p>{JSON.stringify(test, null, 2)}</p>
           <p>{JSON.stringify(date, null, 2)}</p> */}
 
           <Col lg="3" sm="6">
-            <Card className="card-stats">
+          <Card className="card-stats">
+              <Card.Body>
+              <h6>templates</h6>
+            {dropDownContext}
+                          </Card.Body>
+              <Card.Footer>
+                <hr></hr>
+                <div className="stats">
+                  <i className="far fa-calendar-alt mr-1"></i>
+                  Select your template to run
+                </div>
+              </Card.Footer>
+            </Card>
+            <h1>running instnace {instanceId}</h1>
+            {/* <Card className="card-stats">
               <Card.Body>
                 <Row>
                   <Col xs="5">
@@ -150,30 +236,18 @@ function Dashboard() {
                   Update Now
                 </div>
               </Card.Footer>
-            </Card>
+            </Card> */}
           </Col>
           <Col lg="3" sm="6">
             <Card className="card-stats">
               <Card.Body>
-                <Row>
-                  <Col xs="5">
-                    <div className="icon-big text-center icon-warning">
-                      <i className="nc-icon nc-light-3 text-success"></i>
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">Revenue</p>
-                      <Card.Title as="h4">$ 1,345</Card.Title>
-                    </div>
-                  </Col>
-                </Row>
+                  <h6>selected template</h6> {selectedTemplate}
               </Card.Body>
               <Card.Footer>
                 <hr></hr>
                 <div className="stats">
-                  <i className="far fa-calendar-alt mr-1"></i>
-                  Last day
+                  <i className="fa-solid fa-play"></i>
+                  <button  onClick={()=> RunTestInstance(selectedTemplate)} >Run </button>
                 </div>
               </Card.Footer>
             </Card>

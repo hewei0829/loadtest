@@ -13,7 +13,7 @@ namespace webapi.Controllers;
 using Microsoft.Extensions.Caching.Memory;
 
 [ApiController]
-[Route("api/test")]
+[Route("loadtest")]
 public class WeatherForecastController : ControllerBase
 {
     private static readonly string[] Summaries = new[]
@@ -36,7 +36,7 @@ public class WeatherForecastController : ControllerBase
     }
 
     
-    [Route("{fileName}")]
+    [Route("createNewRunTemplate/{fileName}")]
     [HttpPost]
     public async Task<IActionResult> AddTestFile(string fileName)
      {
@@ -47,6 +47,22 @@ public class WeatherForecastController : ControllerBase
             }                  
                 return Ok();
      }
+
+         
+    [Route("getAllRunTemplates")]
+    [HttpGet]
+    public async Task<List<string>> GetAllTemplates()
+     {
+        var res = System.IO.Directory.GetFiles("/home/node/app/","*.jmx", SearchOption.TopDirectoryOnly);
+        var output = new List<string>();
+        foreach(var single in res)
+        {
+            output.Add(single.Split("/").Last());
+        }
+
+        return output;
+     }
+
 
 
     private DateTime ToEpochTime(long unixTimeStamp)
@@ -113,6 +129,7 @@ public class WeatherForecastController : ControllerBase
 
     private async Task<AggregatedResults> RunningInstanceResult(string fileName, int sampleRate)
      {
+         fileName = fileName + ".csv";
          var rep = new AggregatedResults();
          rep.listData = new List<AggregatedResult>();
 
@@ -250,19 +267,24 @@ public class WeatherForecastController : ControllerBase
      }
 
     [Route("startTestRun/{template}")]
-    [HttpPost]
-    public async Task<string> StartTestRun(string template)
+    [HttpGet]
+    public async Task<LoadTestInstance> StartTestRun(string template)
      {
          var instanceName  = template +"-"+ Guid.NewGuid();
          var command = $"jmeter -n -t /opt/testfile/{template} -l /opt/testfile/{instanceName}.csv";
         var commands = command.Split(null).ToList();
                 DockerMethod(commands);     
 
-                return instanceName;
+                var res =  new LoadTestInstance();
+                res.Id = instanceName;
+                res.template = template;
+
+                return res;
     }
 
 
     [HttpPost]
+    [Route("runCommand")]
      public async Task<IActionResult> Post()
      {
         using (var reader = new StreamReader(Request.Body))

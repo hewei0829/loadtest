@@ -1,0 +1,48 @@
+version: '3.5'
+services:
+  # loadtest:
+  #   image: portal
+  #   build:
+  #     context: ./test2
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     NODE_ENV: production
+  #   ports:
+  #     - 3000:3000
+  # redis-master:
+  #   image: 'bitnami/redis:latest'
+  #   ports:
+  #       - "6379:6379"
+  #   environment:
+  #     - REDIS_REPLICATION_MODE=master
+  #     - REDIS_PASSWORD="MyPassword"
+  jmeter:
+    image: 'j_meter:latest'
+    command: ["/bin/sleep", "infinite","/usr/sbin/sshd", "-D"]
+    volumes:
+      - kub_myapp:/opt/testfile
+      # - /var/run/dockcd .er.sock:/var/run/docker.sock
+  # dotnet.app:
+  #  image: ${DOCKER_REGISTRY-}dotnet:v1
+  #  build:
+  #   context: ./App
+  #   dockerfile: Dockerfile  
+  Weatherforecase.Service:
+   image: ${DOCKER_REGISTRY-}ssldemo:v1
+  #  command: ["/bin/sleep", "infinite"]
+  #  depends_on:
+  #   - "redis-master"
+   build:
+    context: ./webapi
+    dockerfile: Dockerfile
+   environment:
+    - ASPNETCORE_ENVIRONMENT=Development
+    - ASPNETCORE_URLS=http://+:80
+   ports:
+    - "5222:80"
+   volumes:
+    - kub_myapp:/home/node/app
+    - /var/run/docker.sock:/var/run/docker.sock
+volumes:
+  kub_myapp:
+    external: true
